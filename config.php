@@ -47,7 +47,7 @@ function db_close($conn)
 }
 
 function echo_query($q) {
-	
+	$i = FALSE;
 	foreach( $q as $row ) {
 		$verse = array();
 		foreach($row as $key => $val) {
@@ -55,7 +55,10 @@ function echo_query($q) {
 			array_push($verse, $key . "=" . $val);
 		}
 		echo implode("|", $verse) . "\n";
+                $i = true;
 	}
+        
+        if (!$i) echo "0\n";
 }
 
 function check_credentials ($conn, $login, $pass) {

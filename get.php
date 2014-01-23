@@ -3,8 +3,7 @@ include_once("config.php");
 
 if(isset($_POST["login"]) and isset($_POST["password"])) {
 	$conn = db_init();
-	$user = check_credentials($conn, $_POST["login"],  $_POST["password"]);
-	
+	$user = check_credentials($conn, $_POST["login"], $_POST["password"]);
 	// Parse POST values
 	if($user != null) {
 		if(isset($_POST["what"])) {
@@ -26,16 +25,22 @@ if(isset($_POST["login"]) and isset($_POST["password"])) {
 				case "authorsByBookId":
 					get_authors_by_book_id($conn, $user, $_POST["val"]);
 					break;
-				case "publishers":
+                                case "publishers":
 					get_publishers($conn, $user);
 					break;
 				case "publisherById":
 					get_publisher_by_id($conn, $user, $_POST["val"]);
 					break;
+				case "publisherByBookId":
+					get_publisher_by_book_id($conn, $user, $_POST["val"]);
+					break;
 				case "tags":
 					get_tags($conn, $user);
 					break;
 				case "tagById":
+					get_tag_by_id($conn, $user, $_POST["val"]);
+					break;
+				case "tagsByBookId":
 					get_tag_by_id($conn, $user, $_POST["val"]);
 					break;
 				case "users":
@@ -103,14 +108,14 @@ function get_author_by_id($conn, $user, $val) {
 
 function get_authors_by_book_id($conn, $user, $val) {
 	if($val != null) {
-		$q = execute_query($conn, "SELECT a.id,a.firstName,a.lastName,
-								a.createdDate,a.createdBy,a.modifiedDate,
-								a.modifiedBy 
-								FROM authorToBook AS atb 
-								JOIN author AS a 
-								ON a.id = atb.authorId 
-								WHERE atb.bookId = " 
-								. mysqli_real_escape_string($conn, $val));
+		$q = execute_query($conn, "SELECT a.id,a.firstName,a.lastName,"
+                                    . "a.createdDate,a.createdBy,a.modifiedDate,"
+                                    . "a.modifiedBy "
+                                    . "FROM authorToBook AS atb "
+                                    . "INNER JOIN author AS a "
+                                    . "ON a.id = atb.authorId "
+                                    . "WHERE atb.bookId = "
+                                    . mysqli_real_escape_string($conn, $val));
 		echo_query($q);
 	} else {
 		echo "ERROR: Missing parameter 'val'.\n";
@@ -132,6 +137,20 @@ function get_publisher_by_id($conn, $user, $val) {
 	}
 }
 
+function get_publisher_by_book_id($conn, $user, $val) {
+	if($val != null) {
+		$q = execute_query($conn, "SELECT p.id,p.name,b.id AS bookId "
+                        . "FROM book AS b "
+                        . "INNER JOIN publisher AS p "
+                            . "ON b.publisherId = p.id "
+                        . "WHERE b.id = "
+                        . mysqli_real_escape_string($conn, $val));
+		echo_query($q); 
+	} else {
+		echo "ERROR: Missing parameter 'val'.\n";
+	}
+}
+
 function get_tags($conn, $user) {
 	$q = execute_query($conn, "SELECT * FROM tag");
 	echo_query($q);
@@ -140,8 +159,22 @@ function get_tags($conn, $user) {
 function get_tag_by_id($conn, $user, $val) {
 	if($val != null) {
 		$q = execute_query($conn, "SELECT * FROM tag WHERE id = " 
-								. mysqli_real_escape_string($conn, $val));
+					. mysqli_real_escape_string($conn, $val));
 		echo_query($q);
+	} else {
+		echo "ERROR: Missing parameter 'val'.\n";
+	}
+}
+
+function get_tags_by_book_id($conn, $user, $val) {
+	if($val != null) {
+		$q = execute_query($conn, "SELECT t.id,t.name,b.id AS bookId "
+                        . "FROM book AS b "
+                        . "INNER JOIN tag AS t "
+                            . "ON t.id = p.id "
+                        . "WHERE b.id = "
+                        . mysqli_real_escape_string($conn, $val));
+		echo_query($q); 
 	} else {
 		echo "ERROR: Missing parameter 'val'.\n";
 	}
@@ -150,8 +183,8 @@ function get_tag_by_id($conn, $user, $val) {
 function get_users($conn, $user) {
 	if($user->isAdmin) {
 		$q = execute_query($conn, "SELECT id, login, firstName, lastName,
-									adminRole, createdDate, createdBy,
-									modifiedDate, modifiedBy FROM users");
+					adminRole, createdDate, createdBy,
+					modifiedDate, modifiedBy FROM users");
 		echo_query($q);	
 	} else {
 		echo "ERROR: Bad or missing credentials.\n";
@@ -162,9 +195,9 @@ function get_user_by_id($conn, $user, $val) {
 	if($val != null) {
 		$query = null;
 		if ($user->isAdmin or $user->id == $val) $query = "SELECT id, 
-									login, firstName, lastName, adminRole,
-									createdDate, createdBy, modifiedDate,
-									modifiedBy FROM users WHERE id = ";
+					login, firstName, lastName, adminRole,
+					createdDate, createdBy, modifiedDate,
+					modifiedBy FROM users WHERE id = ";
 		else $query = "SELECT id,firstName,lastName  FROM users WHERE id = ";
 		$q = execute_query($conn, $query . mysqli_real_escape_string($conn, $val));
 		echo_query($q);
